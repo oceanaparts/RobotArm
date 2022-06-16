@@ -9,33 +9,31 @@ import time
 #2、运动逆解坐标单位可修改
 last_flag="angle_neg"
 #使机械臂处于竖直状态时的各舵机角
-motor0=135
-motor1=135
-motor2=135
-motor3=135
-h_angle=0
+motor0=95
+motor1=95
+motor2=90
 #PCA9685的I2C
 i2c = I2C(sda=Pin('P5'), scl=Pin('P4'))
 #实例化一个舵机对象
 servo = Servos(i2c, address=0x40, freq=50, min_us=500, max_us=2500, degrees=180)
 def Handle_angle(j0,j1,j2):
-    if((j0+motor0>0)and(j0+motor0<270)):
+    if((j0+motor0>0)and(j0+motor0<180)):
         j0=j0+motor0
     else:
         return 0
-    if((motor1-90+j1>80)and(motor1-90+j1<270)):
+    if((motor1-90+j1>0)and(motor1-90+j1<180)):
         j1=motor1-90+j1
     else:
         return 0
-    if((motor2+j2>30)and(motor2+j2<220)):
-        j2=motor2+j2
+    if((motor2-j2>0)and(motor2-j2<180)):
+        j2=motor2-j2
     else:
         return 0
     return j0,j1,j2
 def inverseKinematics(x,y,z,Alpha,unit=1):#这里的度数是以水平面逆时针旋转的角度，这里的xyz是第四个舵机轴的位置
     'unit可修改x,y,z单位，默认为mm当unit为10时，单位是1/10毫米以此类推，单位越小精度越高求解越慢'
-    l1=104*unit
-    l2=93*unit
+    l1=107*unit
+    l2=50*unit
     l3=400*unit
     theta0 = math.atan2(y, x)
     #theta2
@@ -61,12 +59,10 @@ def inverseKinematics(x,y,z,Alpha,unit=1):#这里的度数是以水平面逆时�
     return math.degrees(theta0),math.degrees(theta1_pos),math.degrees(theta2_pos),math.degrees(theta0),math.degrees(theta1_neg),math.degrees(theta2_neg)
 
 
-def write_position(x,y,z,a,mode,unit=1):#mode等于1表示不参考上一解，0表示参考上一解，如果上一次解是pos这次是neg则不写入跳过
-    'mode=1，可使可到达空间增加，但对连续的运动，比如让他画一条直线，可能出现运动的跳跃'
-    'mode=0，使可到达空间减小，但是运动连续'
+def write_position(x,y,z,mode,unit=1):
     global last_flag
     flag,flag_neg,flag_pos=0,0,0
-    an=inverseKinematics(x,y,z,a,unit)
+    an=inverseKinematics(x,y,z,unit)
     if(an!=0):
         j0,j1,j2,j0_neg,j1_neg,j2_neg=an
         flag=1
@@ -80,9 +76,11 @@ def write_position(x,y,z,a,mode,unit=1):#mode等于1表示不参考上一解，0
         if(an_neg!=0):
             angle_neg=an_neg
             flag_neg=1
+
         elif((an_pos!=0)):
             angle_pos=an_pos
             flag_pos=1
+
         else:
             print("角度超过舵机所限角度")
             flag=0
@@ -123,12 +121,12 @@ def write_position(x,y,z,a,mode,unit=1):#mode等于1表示不参考上一解，0
         return 0
 
 utime.sleep_ms(1000)
-
+write_position(50,0,107,1,1)
 while(True):#x轴平移
-    for j in range(121,60,-1):
-        write_position(j,0,150,0,1,1)
-    for j in range(60,121,1):
-        write_position(j,0,150,0,1,1)
+    for j in range(50,70,1):
+        write_position(j,0,100,1,1)
+    for j in range(70,50,-1):
+        write_position(j,0,100,1,1)
 #while(True):#x轴平移
     #for j in range(160,130,-1):
         #write_position(10,0,j/10,0)
